@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Environment variables
+.env
+config.json
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# PM2 logs
+.pm2
+
+# Optional: IDE files
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
