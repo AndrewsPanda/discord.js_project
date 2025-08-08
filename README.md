@@ -57,33 +57,46 @@ sed -i 's/\r$//' deploy.sh
 ```
 This installs PM2, starts the bot, and configures auto-start on boot.
 
-### Daily Usage Commands
+### Choose Your Deployment Method
 
-**Start the Bot:**
+**Method 1: Quick Testing (`npm start`)**
+- **When:** Testing changes locally or quick one-time runs
+- **Why:** Simple, no process management
+- **Limitation:** Bot stops if terminal closes or server reboots
 ```bash
-# Quick start
 npm start
+```
 
-# Or with PM2 (recommended)
+**Method 2: Production with PM2 (`npm run pm2:start`)**  
+- **When:** Running on a server long-term
+- **Why:** Auto-restart, monitoring, keeps running after terminal closes
+- **Best for:** Production servers, VPS deployments
+```bash
 npm run pm2:start
+```
 
-# Or automated deployment
+**Method 3: Full Automated Setup (`./deploy.sh`)**
+- **When:** First-time setup or major updates
+- **Why:** Handles everything - dependencies, PM2 install, startup config
+- **Use once:** Initial deployment, then use PM2 commands daily
+```bash
 ./deploy.sh
 ```
 
-**Monitor & Control:**
+### Daily Management (After Setup)
+
+**Monitor Your Bot:**
 ```bash
-# View bot status
-pm2 status
+pm2 status              # Check if bot is running
+pm2 logs discord-bot     # View live logs
+pm2 monit               # Resource usage dashboard
+```
 
-# View live logs  
-pm2 logs discord-bot
-
-# Restart bot
-npm run pm2:restart
-
-# Stop bot
-npm run pm2:stop
+**Control Your Bot:**
+```bash
+npm run pm2:restart     # Restart after code changes
+npm run pm2:stop        # Stop the bot
+npm run pm2:start       # Start if stopped
 ```
 
 ## 🛠️ Development
@@ -105,17 +118,26 @@ npm run dev
 | `npm run pm2:restart` | Restart PM2 process |
 | `npm run pm2:logs` | View PM2 logs |
 
-## 🐳 Docker Deployment
+## 🐳 Docker Deployment (Alternative Method)
+
+**When to use Docker:**
+- You want isolated/containerized deployment
+- Your hosting platform requires containers (Railway, Google Cloud Run)
+- You have multiple bots and want separation
+- Your server runs other services that might conflict
+
+**When NOT to use Docker:**
+- Simple VPS deployment (PM2 method is easier)
+- Local development (just use `npm start`)
 
 ### Build and Run
-
 ```bash
 docker build -t discord-bot .
 docker run -d --env-file .env --name discord-bot discord-bot
 ```
 
-### Docker Compose (Optional)
-
+### Docker Compose (Recommended for Docker users)
+Create `docker-compose.yml`:
 ```yaml
 version: '3.8'
 services:
@@ -123,6 +145,11 @@ services:
     build: .
     env_file: .env
     restart: unless-stopped
+```
+
+Then run:
+```bash
+docker-compose up -d
 ```
 
 ## 📊 Process Management
@@ -146,13 +173,24 @@ pm2 stop discord-bot
 pm2 monit
 ```
 
-### Auto-start on Boot
+### Auto-start on Server Boot (Optional)
 
-After running `./deploy.sh`, execute the command shown by PM2:
+**When needed:** Only if your server reboots and you want the bot to start automatically
 
+**What happens:** After running `./deploy.sh`, PM2 shows a command like this:
 ```bash
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $(whoami) --hp $(eval echo ~$(whoami))
 ```
+
+**Why run it:** 
+- Bot automatically starts when server boots up
+- No manual intervention needed after power outages/reboots
+- **Only needed once** - after first deployment
+
+**When NOT needed:**
+- If you manually start/stop your server
+- If you prefer manual bot control
+- On development machines
 
 ## 🔧 Configuration
 
