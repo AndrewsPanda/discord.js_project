@@ -6,10 +6,12 @@ A production-ready Discord bot built with Discord.js v14, featuring modern deplo
 
 - **Discord.js v14** - Latest version with full API v10 support
 - **Production Ready** - PM2 process management, error handling, graceful shutdown
+- **Real-time Server Tracking** - Automatic JSON export of comprehensive server information
 - **Docker Support** - Containerized deployment option
 - **Automated Deployment** - One-command deployment script
 - **Comprehensive Logging** - Structured logging with PM2
 - **Environment Management** - Secure token handling with dotenv
+- **Development Ready** - Always up-to-date server data for Claude Code development
 
 ## 📋 Prerequisites
 
@@ -124,6 +126,8 @@ Current intents configured in `index.js`:
 - `GatewayIntentBits.Guilds` - Basic guild information
 - `GatewayIntentBits.GuildMessages` - Message events
 - `GatewayIntentBits.MessageContent` - Message content access
+- `GatewayIntentBits.GuildMembers` - Member information and counts
+- `GatewayIntentBits.GuildEmojisAndStickers` - Custom emojis and stickers
 
 ### Environment Variables
 
@@ -145,15 +149,66 @@ discord.js_project/
 ├── .env.example         # Environment template
 ├── .gitignore          # Git ignore rules
 ├── package.json        # Dependencies and scripts
+├── CLAUDE.md          # Project instructions for Claude Code
 ├── logs/              # PM2 log files
+├── server_data/       # Auto-generated server information (gitignored)
+│   ├── tracked_servers.json
+│   └── {guildId}_{guildName}_server_info.json
 └── README.md          # This file
 ```
 
 ## 🤖 Bot Commands
 
-Currently implemented:
+### Basic Commands
+- `!ping` - Responds with "Pong!" for testing bot connectivity
 
-- `!ping` - Responds with "Pong!"
+### Server Information & Tracking
+- `!serverinfo` - Generate comprehensive server information as JSON
+  - Includes channels, roles, permissions, emojis, stickers, threads
+  - Automatically saves to `server_data/` directory
+  - Sends as Discord attachment if too large for message
+- `!track` - Start tracking current server for automatic updates
+  - Enables real-time JSON updates when server changes
+  - Creates initial server data file
+- `!untrack` - Stop tracking current server
+  - Preserves existing data files
+- `!tracked` - List all currently tracked servers
+  - Shows server names and IDs
+
+### Server Tracking Features
+
+**Automatic Updates Triggered By:**
+- Server settings changes (name, description, verification level, etc.)
+- Channel operations (create, update, delete, permission changes)
+- Role operations (create, update, delete, permission changes)
+- Custom emoji operations (add, modify, remove)
+- Custom sticker operations (add, modify, remove)
+- Thread operations (create, archive, delete)
+
+**Update Schedule:**
+- Real-time updates on tracked events
+- Periodic updates every 30 minutes
+- Full refresh on bot startup
+
+**Data Format:**
+All server data includes metadata:
+```json
+{
+  "basicInfo": { /* server details */ },
+  "channels": [ /* all channels with permissions */ ],
+  "categories": [ /* channel categories */ ],
+  "roles": [ /* roles with permissions */ ],
+  "emojis": [ /* custom emojis */ ],
+  "stickers": [ /* custom stickers */ ],
+  "threads": [ /* active and archived threads */ ],
+  "metadata": {
+    "lastUpdated": "2025-01-08T...",
+    "guildId": "123456789",
+    "guildName": "Server Name",
+    "updateReason": "Real-time update"
+  }
+}
+```
 
 ## 🚢 Deployment Options
 
@@ -178,10 +233,12 @@ Currently implemented:
 ## 🔒 Security
 
 - Environment variables are properly ignored by git
+- **Server data directory is gitignored** - Contains sensitive Discord server information
 - Bot runs as non-root user in Docker
 - Graceful shutdown handling
 - Comprehensive error handling
 - No sensitive data in logs
+- Only tracks servers explicitly added via `!track` command
 
 ## 🐛 Troubleshooting
 
@@ -207,6 +264,14 @@ pm2 logs discord-bot
 - Errors: `./logs/err.log`
 - Output: `./logs/out.log`
 
+### Server Data Files
+
+- Server data: `./server_data/`
+- Tracked servers list: `./server_data/tracked_servers.json`
+- Individual server files: `./server_data/{guildId}_{guildName}_server_info.json`
+
+**Note:** Server data directory is automatically gitignored for security.
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -219,6 +284,24 @@ pm2 logs discord-bot
 
 ISC License - See package.json for details
 
+## 🔧 Development with Claude Code
+
+This bot is designed to work seamlessly with Claude Code development:
+
+### Server Data Access
+- All tracked server information is automatically saved to `server_data/` directory
+- JSON files are always up-to-date with real-time server changes
+- Comprehensive data includes all channels, roles, permissions, and Discord features
+- Use `!track` in any server to start collecting development data
+
+### Development Workflow
+1. Use `!track` in your test Discord server
+2. Server data is automatically saved to `server_data/{guildId}_{guildName}_server_info.json`
+3. Claude Code can access this data for context-aware development
+4. Data updates automatically when you make changes to the Discord server
+
+This ensures Claude Code always has current, comprehensive information about your Discord server structure for accurate development assistance.
+
 ## 🔗 Useful Links
 
 - [Discord.js Guide](https://discordjs.guide/)
@@ -228,4 +311,4 @@ ISC License - See package.json for details
 
 ---
 
-**Made with ❤️ using Discord.js v14**
+**Made with ❤️ using Discord.js v14 | Enhanced with Real-time Server Tracking**

@@ -1,7 +1,7 @@
 {
   "name": "discord.js_project",
   "version": "1.0.0",
-  "description": "",
+  "description": "Production-ready Discord bot with real-time server information tracking and JSON export functionality",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
