@@ -6,6 +6,7 @@ A production-ready Discord bot built with Discord.js v14, featuring modern deplo
 
 - **Discord.js v14** - Latest version with full API v10 support
 - **Production Ready** - PM2 process management, error handling, graceful shutdown
+- **Welcome System** - Automatic member welcome messages with server introduction
 - **Real-time Server Tracking** - Automatic JSON export of comprehensive server information
 - **Docker Support** - Containerized deployment option
 - **Automated Deployment** - One-command deployment script
@@ -161,6 +162,14 @@ discord.js_project/
 
 ### Basic Commands
 - `!ping` - Responds with "Pong!" for testing bot connectivity
+
+### Welcome System
+- **Automatic Welcome Messages** - New members are automatically greeted when they join the server
+  - Sends rich embedded messages in designated welcome channel
+  - Includes server introduction and community information
+  - Directs new members to general chat channel to begin conversations
+  - Shows member count, join date, and personalized information
+  - Integrates with server tracking system for member count updates
 
 ### Server Information & Tracking
 - `!serverinfo` - Generate comprehensive server information as JSON

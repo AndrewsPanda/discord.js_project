@@ -27,6 +27,12 @@
 - `!untrack` - Stop tracking current server
 - `!tracked` - List all currently tracked servers
 
+## Welcome System
+- **Automatic Welcome Messages**: New members are automatically welcomed in the #welcome channel
+- **Server Introduction**: Provides information about the server and community
+- **Channel Redirection**: Directs new members to #general-chat to begin conversations
+- **Rich Embeds**: Features attractive embedded messages with member info and join date
+
 ## Server Information Tracking
 - **Automatic JSON Generation**: Server data is automatically saved to `server_data/` directory
 - **Real-time Updates**: Tracked servers update JSON files when changes occur

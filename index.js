@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, ActivityType, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -16,6 +16,15 @@ const client = new Client({
 // Server data management
 const SERVER_DATA_DIR = path.join(__dirname, 'server_data');
 const TRACKED_SERVERS_FILE = path.join(SERVER_DATA_DIR, 'tracked_servers.json');
+
+// Welcome system configuration
+const WELCOME_CONFIG = {
+    'Big Brain Energy': {
+        guildId: '1403186864520953876',
+        welcomeChannelId: '1403188813974601842', // #welcome
+        generalChatChannelId: '1403186870673739909' // #general-chat
+    }
+};
 
 // Ensure server data directory exists
 if (!fs.existsSync(SERVER_DATA_DIR)) {
@@ -101,7 +110,7 @@ client.once('ready', async () => {
     console.log(`📊 Serving ${client.guilds.cache.size} guilds`);
     
     // Set bot status
-    client.user.setActivity('!ping | !serverinfo | !track | !tracked', { type: ActivityType.Listening });
+    client.user.setActivity('!ping | !serverinfo | !track | !tracked | 🎉 Welcoming new members!', { type: ActivityType.Listening });
     
     // Initialize tracked servers on startup
     const trackedServers = loadTrackedServers();
@@ -245,6 +254,81 @@ client.on('threadDelete', async (thread) => {
     if (trackedServers.includes(thread.guild.id)) {
         console.log(`🧵 Thread deleted in ${thread.guild.name}: ${thread.name}`);
         await saveServerInfoToFile(thread.guild);
+    }
+});
+
+// Welcome System Event Handler
+client.on('guildMemberAdd', async (member) => {
+    try {
+        // Find welcome configuration for this guild
+        const config = Object.values(WELCOME_CONFIG).find(cfg => cfg.guildId === member.guild.id);
+        
+        if (!config) {
+            console.log(`No welcome configuration found for guild: ${member.guild.name}`);
+            return;
+        }
+        
+        // Get welcome channel
+        const welcomeChannel = member.guild.channels.cache.get(config.welcomeChannelId);
+        if (!welcomeChannel) {
+            console.log(`Welcome channel not found in ${member.guild.name}`);
+            return;
+        }
+        
+        // Get general chat channel for mention
+        const generalChatChannel = member.guild.channels.cache.get(config.generalChatChannelId);
+        const generalChatMention = generalChatChannel ? `<#${generalChatChannel.id}>` : '#general-chat';
+        
+        // Create welcome embed
+        const welcomeEmbed = new EmbedBuilder()
+            .setColor('#2ecc71')
+            .setTitle(`Welcome to ${member.guild.name}! 🧠✨`)
+            .setDescription(`Hello <@${member.id}>!\n`)
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))
+            .addFields([
+                {
+                    name: '🎯 About Our Server',
+                    value: `**${member.guild.name}** – ${member.guild.description || 'four synapses firing in harmony'}\n\n`,
+                    inline: false
+                },
+                {
+                    name: '🚀 Getting Started',
+                    value: `Ready to join the conversation? Head over to ${generalChatMention} to say Annyong!\n`,
+                    inline: false
+                },
+                {
+                    name: '📊 Member Info',
+                    value: `**Username:** ${member.user.tag}\n**Member #:** ${member.guild.memberCount}`,
+                    inline: true
+                },
+                {
+                    name: '📅 Join Date',
+                    value: new Date().toDateString(),
+                    inline: true
+                }
+            ])
+            .setFooter({
+                text: `Welcome to ${member.guild.name}`,
+                iconURL: member.guild.iconURL()
+            })
+            .setTimestamp();
+        
+        // Send welcome message
+        await welcomeChannel.send({
+            content: `🎉 Everyone, please welcome ${member} to **${member.guild.name}**!`,
+            embeds: [welcomeEmbed]
+        });
+        
+        console.log(`✅ Sent welcome message for ${member.user.tag} in ${member.guild.name}`);
+        
+        // Update server info if this guild is being tracked
+        const trackedServers = loadTrackedServers();
+        if (trackedServers.includes(member.guild.id)) {
+            await saveServerInfoToFile(member.guild);
+        }
+        
+    } catch (error) {
+        console.error(`Error sending welcome message for ${member.user.tag}:`, error);
     }
 });
 
