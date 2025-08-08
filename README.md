@@ -20,34 +20,70 @@ A production-ready Discord bot built with Discord.js v14, featuring modern deplo
 - Discord Application with Bot Token
 - PM2 (installed automatically by deploy script)
 
-## 🔧 Quick Start
+## 🔧 Setup Instructions
 
-### 1. Clone & Install
+### Initial Setup (Run Once)
 
+**1. Install Dependencies**
 ```bash
-git clone <your-repo-url>
-cd discord.js_project
 npm install
 ```
 
-### 2. Configure Environment
-
+**2. Configure Environment** 
 ```bash
 cp .env.example .env
 ```
-
 Edit `.env` with your Discord bot credentials:
-
 ```env
 DISCORD_TOKEN=your_bot_token_here
 CLIENT_ID=your_application_id_here
 NODE_ENV=production
 ```
 
-### 3. Deploy
+**3. Make Deploy Script Executable**
+```bash
+chmod +x deploy.sh
+```
 
+**4. Fix Line Endings (if needed)**
+If you get `/bin/bash^M: bad interpreter` error:
+```bash
+sed -i 's/\r$//' deploy.sh
+```
+
+**5. Full Deployment Setup**
 ```bash
 ./deploy.sh
+```
+This installs PM2, starts the bot, and configures auto-start on boot.
+
+### Daily Usage Commands
+
+**Start the Bot:**
+```bash
+# Quick start
+npm start
+
+# Or with PM2 (recommended)
+npm run pm2:start
+
+# Or automated deployment
+./deploy.sh
+```
+
+**Monitor & Control:**
+```bash
+# View bot status
+pm2 status
+
+# View live logs  
+pm2 logs discord-bot
+
+# Restart bot
+npm run pm2:restart
+
+# Stop bot
+npm run pm2:stop
 ```
 
 ## 🛠️ Development
