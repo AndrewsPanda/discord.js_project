@@ -581,7 +581,7 @@ async function processWithClaude(messageContent) {
                 for await (const message of claudeQuery({
                     prompt: sanitized,
                     options: {
-                        timeout: 15000
+                        timeout: 120000  // Increased to 2 minutes for complex operations
                         // Removed maxTurns: 1 to test
                     }
                 })) {
@@ -702,15 +702,15 @@ function processWithClaudeCLI(sanitized, processId) {
             }
         });
         
-        // Timeout after 15 seconds  
+        // Timeout after 2 minutes for complex operations  
         timeout = setTimeout(() => {
             console.log('⏰ Claude CLI process timeout reached, terminating...');
             if (!claudeProcess.killed) {
                 claudeProcess.kill('SIGTERM');
             }
             cleanup();
-            reject(new Error('Claude CLI process timed out after 15 seconds. Try using the SDK instead.'));
-        }, 15000);
+            reject(new Error('Claude CLI process timed out after 2 minutes. Try using the SDK instead.'));
+        }, 120000);  // Increased to 2 minutes for complex operations
     });
 }
 

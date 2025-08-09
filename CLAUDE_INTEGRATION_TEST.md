@@ -33,7 +33,7 @@
 - ✅ **Input sanitization** - Prevents command injection attacks
 - ✅ **Process limits** - Maximum 3 concurrent Claude requests
 - ✅ **Memory cleanup** - Prevents memory leaks from cooldowns
-- ✅ **15-second timeout protection** - Improved from 30 seconds
+- ✅ **2-minute timeout protection** - Allows for complex operations
 
 ## 🧪 Testing Instructions
 

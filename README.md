@@ -169,7 +169,7 @@ That's it! Your bot should now be online and ready to use.
   - ✅ Rate limiting (3-second cooldown per user)
   - ✅ Concurrency control (max 3 simultaneous requests)
   - ✅ Automatic message splitting for long responses
-  - ✅ Timeout protection (15-second limit with graceful fallback)
+  - ✅ Timeout protection (2-minute limit with graceful fallback)
 
 ### Basic Commands
 - `!ping` - Test bot connectivity (responds with "Pong!")
@@ -319,7 +319,7 @@ pm2 logs discord-bot
    # If CLI hangs, the SDK should handle it automatically
    ```
 
-**"Claude process timed out after 15 seconds"**
+**"Claude process timed out after 2 minutes"**
 - ✅ **Expected behavior** - This is the CLI fallback timeout working correctly
 - ✅ **Solution**: The bot automatically falls back between SDK and CLI methods
 - ❌ **If persistent**: Check that Claude Code CLI is properly authenticated
@@ -534,7 +534,7 @@ All server information is saved in structured JSON format:
 
 | Metric | Current Performance | Target/Ideal |
 |--------|-------------------|--------------|
-| **Response Time** | 3-5 seconds (SDK) / 15s (CLI) | 2-3 seconds |
+| **Response Time** | 3-5 seconds (SDK) / 2min max (CLI) | 2-3 seconds |
 | **Success Rate** | 95% (SDK+CLI) / 10% (CLI only) | 99% |
 | **Concurrent Users** | 3 simultaneous | 10+ simultaneous |
 | **Message Length** | 4000 chars input / unlimited output | 8000+ chars input |
