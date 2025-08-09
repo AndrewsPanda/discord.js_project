@@ -2,18 +2,40 @@
 
 ## Executive Summary
 
-This report provides a comprehensive analysis and implementation plan for integrating Discord messages directly with Claude Code, enabling real-time AI-powered responses to Discord users through a seamless bridge between Discord.js and an active Claude Code session. **This document focuses on prototype approaches that leverage session-based integration rather than API-based methods.**
+This report provides implementation approaches for integrating Discord messages directly with Claude Code using session-based methods rather than API calls. **For immediate implementation, see our [Simple Integration Guide](./discord-claude-simple-integration-guide.md) which provides a 5-minute setup using the headless piping approach.**
+
+## 🚀 Quick Start
+
+**Want to get started right now?** Follow the [Discord Claude Simple Integration Guide](./discord-claude-simple-integration-guide.md) for:
+- ✅ **5-minute setup** with copy-paste code
+- ✅ **Zero API costs** (uses your Claude Code session)
+- ✅ **Minimal dependencies** (just Discord.js + dotenv)
+- ✅ **Step-by-step instructions** you can follow exactly
+
+The rest of this document covers advanced architectures and alternative approaches.
+
+## 🚀 **TL;DR - Get Started Now**
+
+**Want Discord ↔ Claude Code integration working in 5 minutes?**
+
+1. **Follow this guide**: [Discord Claude Simple Integration Guide](./discord-claude-simple-integration-guide.md)
+2. **How it works**: `Discord message` → `claude -p "message"` → `Discord reply`
+3. **Requirements**: Node.js + Claude Code CLI + Discord bot token
+4. **Cost**: 🎆 **$0** (uses your existing Claude Code session)
+
+---
 
 ## Table of Contents
 
-1. [Integration Approaches](#integration-approaches)
-2. [Architecture Overview](#architecture-overview)
-3. [Implementation Strategy](#implementation-strategy)
-4. [Technical Components](#technical-components)
-5. [Prototype Code Implementation](#prototype-code-implementation)
-6. [Development Setup](#development-setup)
-7. [Testing & Debugging](#testing--debugging)
-8. [Recommendations](#recommendations)
+1. [🚀 Quick Start Guide](./discord-claude-simple-integration-guide.md) **(Start Here)**
+2. [Integration Approaches](#integration-approaches)
+3. [Architecture Overview](#architecture-overview)
+4. [Implementation Strategy](#implementation-strategy)
+5. [Advanced Technical Components](#technical-components)
+6. [Alternative Implementations](#prototype-code-implementation)
+7. [Development Setup](#development-setup)
+8. [Testing & Debugging](#testing--debugging)
+9. [Recommendations](#recommendations)
 
 ---
 
@@ -35,36 +57,37 @@ This report provides a comprehensive analysis and implementation plan for integr
 
 ### Available Session-Based Methods
 
-#### 1. MCP Server Integration (Best for Real-time)
+#### 🥇 Method 1: Headless Mode + Piping (Recommended)
+```
+Discord Bot → `claude -p "message"` → Discord Bot
+```
+- **Pros**: Extremely simple, 5-minute setup, uses existing CLI, zero complexity
+- **Cons**: Each message is independent (no conversation memory)
+- **Best for**: Getting started, prototyping, testing
+- **📋 Implementation**: See [Simple Integration Guide](./discord-claude-simple-integration-guide.md)
+
+#### Method 2: MCP Server Integration (Advanced)
 ```
 Discord Bot ↔ Custom MCP Server ↔ Claude Code Session
 ```
-- **Pros**: Real-time bidirectional communication, native Claude Code integration
-- **Cons**: More complex setup, requires MCP server development
+- **Pros**: Real-time bidirectional communication, conversation persistence
+- **Cons**: Complex setup, requires MCP server development
 - **Best for**: Production-like prototypes with real-time features
 
-#### 2. Headless Mode + Piping (Simplest)
-```
-Discord Bot → stdin pipe → `claude -p` → stdout → Discord Bot
-```
-- **Pros**: Extremely simple, uses existing CLI interface
-- **Cons**: Limited session continuity, basic text-only responses
-- **Best for**: Quick prototypes and testing
-
-#### 3. Hooks System (Event-driven)
+#### Method 3: Memory File + Hooks (Event-driven)
 ```
 Discord Bot → Memory File Updates → Claude Code Hooks → Discord API
 ```
 - **Pros**: Event-driven, leverages Claude Code's hook system
-- **Cons**: File-based communication has latency
+- **Cons**: File-based communication latency, complex setup
 - **Best for**: Automated workflows and batch processing
 
-#### 4. Terminal Control (Advanced)
+#### Method 4: Terminal Control (Expert)
 ```
 Discord Bot → tmux-cli → Active Claude Code Terminal → Discord Bot
 ```
 - **Pros**: Direct session interaction, maintains full context
-- **Cons**: Complex terminal automation, platform-dependent
+- **Cons**: Very complex, platform-dependent, requires terminal automation
 - **Best for**: Advanced prototypes requiring full session control
 
 ---
@@ -114,32 +137,40 @@ Discord User → Discord Server → Discord Bot (Node.js)
 
 ## Implementation Strategy
 
-### Phase 1: Prototype Setup (Days 1-3)
+### 🎯 Start Here: 5-Minute Setup
 
-- Set up Discord bot with message listening capabilities
-- Choose and implement session integration method (recommend starting with headless mode)
-- Create basic message forwarding system
-- Test simple text-based conversations
+**Step 1:** Follow the [Simple Integration Guide](./discord-claude-simple-integration-guide.md)
+- ✅ Working Discord ↔ Claude Code integration in 5 minutes
+- ✅ Copy-paste code that just works
+- ✅ Zero API costs, minimal dependencies
 
-### Phase 2: Enhanced Prototype (Days 4-7)
+### Phase 1: Get It Working (Day 1)
 
-- Add conversation context management through memory files
-- Implement basic error handling and retry logic
-- Support code block formatting and file attachments
-- Add simple command system for bot control
+1. **Complete the Simple Integration** - Get the basic piping approach working
+2. **Test in your Discord server** - Verify messages flow correctly
+3. **Experiment with different prompts** - See how Claude responds
+4. **Invite friends to test** - Get feedback on the integration
 
-### Phase 3: Advanced Prototype (Week 2)
+### Phase 2: Add Basic Features (Days 2-3)
 
-- Upgrade to MCP server integration for real-time features
-- Implement thread-based conversations
-- Add comprehensive logging for debugging
-- Create development utilities and monitoring
+- **Add conversation context** - Store recent messages per user
+- **Support file attachments** - Let users upload code/text files
+- **Add simple commands** - `/reset` to clear conversation history
+- **Improve error handling** - Better error messages for users
+
+### Phase 3: Advanced Features (Week 2)
+
+- **Multiple personalities** - Different Claude behaviors per channel
+- **Better rate limiting** - Per-user queues and fairness
+- **Response formatting** - Code blocks, syntax highlighting
+- **Admin commands** - Bot management and monitoring
 
 ### Phase 4: Production Migration (Optional)
 
-- Transition to API-based approach if moving to production
-- Implement comprehensive security and rate limiting
-- Add deployment automation and monitoring
+- **Transition to API-based** - When you need 24/7 reliability
+- **Add comprehensive security** - Input validation, abuse prevention
+- **Scale to multiple servers** - Database for user context
+- **Monitor and maintain** - Logging, alerts, health checks
 
 ---
 
@@ -1426,12 +1457,15 @@ module.exports = DebugHelper;
 
 ## Recommendations
 
-### 1. Getting Started (Day 1)
+### 1. Getting Started (Right Now!)
 
-1. **Install Claude Code** and verify CLI access with `claude --help`
-2. **Set up Discord bot** with basic message listening
-3. **Test headless integration** with simple message forwarding
-4. **Create dedicated #claude-chat channel** for testing
+**Follow the [Simple Integration Guide](./discord-claude-simple-integration-guide.md)** - it has everything you need:
+1. ✅ **Verify prerequisites** - Node.js, Claude Code, Discord bot token
+2. ✅ **Copy-paste working code** - Complete implementation in one file
+3. ✅ **Test the integration** - Send messages and see Claude respond
+4. ✅ **Troubleshooting guide** - Fix common issues quickly
+
+**Total time: 5 minutes** ⏱️
 
 ### 2. Prototype Best Practices
 

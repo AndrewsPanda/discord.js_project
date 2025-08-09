@@ -1,9 +1,10 @@
-# Discord.js Bot
+# Discord.js Bot with Claude Code Integration
 
-A production-ready Discord bot built with Discord.js v14, featuring automatic welcome messages, real-time server tracking, and comprehensive process management.
+A production-ready Discord bot built with Discord.js v14, featuring automatic welcome messages, real-time server tracking, **and seamless Claude Code AI integration for intelligent responses**.
 
 ## 🚀 Key Features
 
+- **🤖 Claude Code AI Integration** - Chat directly with Claude through Discord (zero API costs!)
 - **Discord.js v14** - Latest API v10 support with modern JavaScript patterns
 - **Welcome System** - Automatic member welcome with rich embeds and server introduction  
 - **Real-time Server Tracking** - Automatic JSON export of comprehensive server data
@@ -13,6 +14,7 @@ A production-ready Discord bot built with Discord.js v14, featuring automatic we
 
 ## 📖 Table of Contents
 
+- [🤖 Claude Code Integration](#-claude-code-integration) **(NEW!)**
 - [Quick Start](#-quick-start)
 - [Bot Commands](#-bot-commands)
 - [Deployment Guide](#-deployment-guide)
@@ -21,6 +23,55 @@ A production-ready Discord bot built with Discord.js v14, featuring automatic we
 - [Troubleshooting](#-troubleshooting)
 - [Project Structure](#-project-structure)
 - [Advanced Topics](#-advanced-topics)
+
+## 🤖 Claude Code Integration
+
+> **🎯 NEW FEATURE!** Chat with Claude AI directly through Discord - no API costs required!
+
+### 5-Minute Claude Integration Setup
+
+**Want to add AI chat to your Discord server right now?**
+
+1. **📋 Follow the guide**: [Discord Claude Simple Integration Guide](./discord-claude-simple-integration-guide.md)
+2. **⚡ How it works**: Users type in `#claude-chat` → Claude responds instantly
+3. **💰 Cost**: **$0** (uses your existing Claude Code session)
+4. **⏱️ Setup time**: 5 minutes with copy-paste code
+
+### What You Get
+
+```
+User: "Write a Python function to reverse a string"
+
+Claude: "Here's a Python function to reverse a string:
+
+def reverse_string(s):
+    return s[::-1]
+
+# Example usage:
+result = reverse_string('hello')
+print(result)  # Output: 'olleh'
+
+Alternatively, you can use the built-in reversed() function:
+
+def reverse_string_alt(s):
+    return ''.join(reversed(s))"
+```
+
+- **🎯 Smart responses** - Claude understands code, explains concepts, helps debug
+- **🛡️ Built-in safety** - Rate limiting, error handling, message splitting
+- **⚡ Real-time** - Instant responses with typing indicators
+- **🔒 Secure** - No API keys needed, uses your logged-in Claude Code session
+
+### Available Integration Methods
+
+| Method | Setup Time | Best For | Conversation Memory |
+|--------|------------|----------|-------------------|
+| **[Headless Piping](./discord-claude-simple-integration-guide.md)** ⭐ | 5 minutes | Getting started, prototyping | No |
+| **[Advanced Integration](./discord-claude-integration-report.md)** | 1-2 hours | Production features, context | Yes |
+
+**👉 Start with the Simple Guide - it just works!**
+
+---
 
 ## 🚀 Quick Start
 
@@ -54,6 +105,13 @@ npm start
 That's it! Your bot should now be online and ready to use.
 
 ## 🤖 Bot Commands
+
+### 🧠 Claude AI Commands (NEW!)
+- **Chat in #claude-chat** - Direct conversation with Claude AI
+  - `"Help me debug this code: [paste code]"`
+  - `"Explain quantum computing in simple terms"`
+  - `"Write a function to calculate fibonacci numbers"`
+- **Built-in safety** - 3-second cooldown per user, 30-second timeout protection
 
 ### Basic Commands
 - `!ping` - Test bot connectivity (responds with "Pong!")
