@@ -3,6 +3,23 @@ const { Client, GatewayIntentBits, ActivityType, EmbedBuilder } = require('disco
 const fs = require('fs');
 const path = require('path');
 
+// Claude SDK will be loaded dynamically (ES module)
+let claudeQuery = null;
+
+// Load Claude Code SDK asynchronously
+async function initializeClaudeSDK() {
+    try {
+        const claudeSDK = await import('@anthropic-ai/claude-code');
+        claudeQuery = claudeSDK.query;
+        console.log('✅ Claude Code SDK loaded successfully');
+    } catch (error) {
+        console.warn('⚠️  Claude Code SDK not available, using CLI fallback:', error.message);
+    }
+}
+
+// Load the spawn function for CLI fallback
+const { spawn } = require('child_process');
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -16,6 +33,27 @@ const client = new Client({
 // Server data management
 const SERVER_DATA_DIR = path.join(__dirname, 'server_data');
 const TRACKED_SERVERS_FILE = path.join(SERVER_DATA_DIR, 'tracked_servers.json');
+
+// Claude integration - User cooldowns to prevent spam
+const userCooldowns = new Map();
+const COOLDOWN_MS = 3000; // 3 seconds between messages per user
+
+// Process concurrency limits
+const activeProcesses = new Set();
+const MAX_CONCURRENT_PROCESSES = 3;
+
+// Cleanup expired cooldowns periodically (prevents memory leak)
+function cleanupExpiredCooldowns() {
+    const now = Date.now();
+    for (const [userId, expireTime] of userCooldowns.entries()) {
+        if (now >= expireTime) {
+            userCooldowns.delete(userId);
+        }
+    }
+}
+
+// Clean up cooldowns every minute
+setInterval(cleanupExpiredCooldowns, 60000);
 
 // Welcome system configuration
 const WELCOME_CONFIG = {
@@ -109,8 +147,11 @@ client.once('ready', async () => {
     console.log(`✅ ${client.user.tag} is online and ready!`);
     console.log(`📊 Serving ${client.guilds.cache.size} guilds`);
     
+    // Initialize Claude Code SDK
+    await initializeClaudeSDK();
+    
     // Set bot status
-    client.user.setActivity('!ping | !serverinfo | !track | !tracked | 🎉 Welcoming new members!', { type: ActivityType.Listening });
+    client.user.setActivity('!ping | !serverinfo | !track | !tracked | 🤖 Claude AI in #claude-chat | 🎉 Welcoming!', { type: ActivityType.Listening });
     
     // Initialize tracked servers on startup
     const trackedServers = loadTrackedServers();
@@ -495,11 +536,306 @@ async function getComprehensiveGuildInfo(guild) {
     }
 }
 
+// ================================
+// CLAUDE CODE INTEGRATION FUNCTIONS
+// ================================
+
+// Input sanitization for security
+function sanitizeInput(input) {
+    if (!input || typeof input !== 'string') {
+        return '';
+    }
+    // Remove potentially dangerous characters and limit length
+    return input.replace(/[\$`\\]/g, '').trim().substring(0, 4000);
+}
+
+// Process message with Claude Code SDK (preferred) or CLI (fallback)
+async function processWithClaude(messageContent) {
+    // Check concurrency limit
+    if (activeProcesses.size >= MAX_CONCURRENT_PROCESSES) {
+        throw new Error('System busy. Too many requests in progress. Please try again in a moment.');
+    }
+    
+    // Validate and sanitize input
+    const sanitized = sanitizeInput(messageContent);
+    if (!sanitized || sanitized.length === 0) {
+        throw new Error('Invalid or empty message');
+    }
+    
+    console.log('🤖 Processing with Claude:', sanitized.substring(0, 50) + '...');
+    
+    // Track this process
+    const processId = Date.now() + Math.random();
+    activeProcesses.add(processId);
+    
+    try {
+        // Try SDK approach first (much more reliable)
+        if (claudeQuery) {
+            console.log('📡 Using Claude Code SDK...');
+            
+            try {
+                console.log('🔧 Calling SDK with prompt:', sanitized.substring(0, 50) + '...');
+                const messages = [];
+                
+                // Try without maxTurns to see if that's causing the issue
+                for await (const message of claudeQuery({
+                    prompt: sanitized,
+                    options: {
+                        timeout: 15000
+                        // Removed maxTurns: 1 to test
+                    }
+                })) {
+                    if (message.type === "result") {
+                        // Debug: check if result is actually empty
+                        if (!message.result || message.result.trim().length === 0) {
+                            console.log('🔍 SDK returned empty result, checking fallback...');
+                            console.log('🔍 Result value:', JSON.stringify(message.result));
+                            console.log('🔍 Full message:', JSON.stringify(message, null, 2));
+                        }
+                        
+                        const result = message.result;
+                        
+                        // If SDK returns empty/null result, fall back to CLI
+                        if (!result || result.trim().length === 0) {
+                            console.log('⚠️  SDK returned empty result, falling back to CLI');
+                            throw new Error('SDK returned empty result, falling back to CLI');
+                        }
+                        
+                        console.log('✅ Claude responded via SDK:', result.substring(0, 50) + '...');
+                        return result;
+                    }
+                    messages.push(message);
+                }
+                
+                // Fallback if no result message
+                const lastMessage = messages[messages.length - 1];
+                return lastMessage?.content || 'No response received from Claude SDK';
+                
+            } catch (sdkError) {
+                console.log('⚠️  SDK failed, falling back to CLI:', sdkError.message);
+                // Fall through to CLI method
+            }
+        }
+        
+        // CLI approach (fallback)
+        console.log('⚠️  Using CLI fallback (may timeout)...');
+        return await processWithClaudeCLI(sanitized, processId);
+        
+    } catch (error) {
+        console.error('❌ Error in processWithClaude:', error.message);
+        throw error;
+    } finally {
+        activeProcesses.delete(processId);
+    }
+}
+
+
+// CLI fallback method (original implementation with fixes)
+function processWithClaudeCLI(sanitized, processId) {
+    
+    return new Promise((resolve, reject) => {
+        // Spawn Claude process with proper stdio configuration
+        const claudeProcess = spawn('claude', [
+            '-p', sanitized,
+            '--output-format', 'json'
+        ], {
+            stdio: ['ignore', 'pipe', 'pipe']  // ignore stdin, pipe stdout/stderr
+        });
+        
+        let stdout = '';
+        let stderr = '';
+        let timeout;
+        
+        // Cleanup function
+        const cleanup = () => {
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = null;
+            }
+        };
+        
+        claudeProcess.stdout.on('data', (data) => {
+            stdout += data.toString();
+        });
+        
+        claudeProcess.stderr.on('data', (data) => {
+            stderr += data.toString();
+        });
+        
+        // Handle process errors (e.g., command not found)
+        claudeProcess.on('error', (error) => {
+            cleanup();
+            reject(new Error(`Claude CLI process error: ${error.message}`));
+        });
+
+        claudeProcess.on('close', (code) => {
+            cleanup();
+            
+            if (code === 0) {
+                try {
+                    // Parse JSON response
+                    const parsed = JSON.parse(stdout);
+                    
+                    // Extract response from different possible JSON formats
+                    let response;
+                    if (parsed.result) {
+                        response = parsed.result;  // New format
+                    } else if (parsed.response) {
+                        response = parsed.response;  // Old format
+                    } else if (parsed.type === 'result' && !parsed.is_error) {
+                        response = parsed.result || 'Claude processed your message but returned no content.';
+                    } else if (parsed.is_error) {
+                        response = '❌ Claude encountered an error processing your message.';
+                    } else {
+                        response = stdout;  // Use raw output if structure is unknown
+                    }
+                    
+                    console.log('✅ Claude responded via CLI:', response.substring(0, 50) + '...');
+                    resolve(response);
+                } catch (parseError) {
+                    // Fallback to raw stdout if JSON parsing fails
+                    console.log('⚠️  JSON parse failed, using raw output');
+                    resolve(stdout || 'No response received');
+                }
+            } else {
+                reject(new Error(`Claude CLI process failed (code ${code}): ${stderr}`));
+            }
+        });
+        
+        // Timeout after 15 seconds  
+        timeout = setTimeout(() => {
+            console.log('⏰ Claude CLI process timeout reached, terminating...');
+            if (!claudeProcess.killed) {
+                claudeProcess.kill('SIGTERM');
+            }
+            cleanup();
+            reject(new Error('Claude CLI process timed out after 15 seconds. Try using the SDK instead.'));
+        }, 15000);
+    });
+}
+
+// Send response, splitting if needed
+async function sendResponse(message, response) {
+    const MAX_LENGTH = 2000;
+    
+    // Handle null/undefined responses
+    const responseText = response || 'No response received';
+    
+    if (responseText.length <= MAX_LENGTH) {
+        await message.reply(responseText);
+    } else {
+        // Split long responses
+        const chunks = [];
+        for (let i = 0; i < responseText.length; i += MAX_LENGTH) {
+            chunks.push(responseText.substring(i, i + MAX_LENGTH));
+        }
+        
+        for (let i = 0; i < chunks.length; i++) {
+            const prefix = i === 0 ? '' : `(${i + 1}/${chunks.length}) `;
+            if (i === 0) {
+                await message.reply(prefix + chunks[i]);
+            } else {
+                await message.channel.send(prefix + chunks[i]);
+            }
+        }
+    }
+}
+
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     
+    // ================================
+    // CLAUDE AI INTEGRATION - Handle #claude-chat messages
+    // ================================
+    if (message.channel.name === 'claude-chat') {
+        // Validate message
+        if (!message.content || message.content.length > 4000) {
+            return message.reply('❌ Message must be between 1-4000 characters.');
+        }
+        
+        if (message.attachments.size > 0) {
+            return message.reply('❌ File attachments are not supported in Claude chat. Please paste text content directly.');
+        }
+        
+        // Simple rate limiting
+        const userId = message.author.id;
+        const now = Date.now();
+        const cooldownEnd = userCooldowns.get(userId);
+        
+        if (cooldownEnd && now < cooldownEnd) {
+            const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+            return message.reply(`⏳ Please wait ${timeLeft}s before sending another message.`);
+        } else if (cooldownEnd) {
+            // Clean expired cooldown entry
+            userCooldowns.delete(userId);
+        }
+        
+        // Set cooldown
+        userCooldowns.set(userId, now + COOLDOWN_MS);
+        
+        // Show typing indicator
+        await message.channel.sendTyping();
+        
+        try {
+            // Process message with Claude Code
+            const response = await processWithClaude(message.content);
+            
+            // Send response (split if too long)
+            await sendResponse(message, response);
+            
+        } catch (error) {
+            console.error('❌ Claude Error:', error.message);
+            
+            // Provide helpful error message based on the error type
+            let errorMsg;
+            if (error.message.includes('timed out')) {
+                errorMsg = '⏱️ Claude is taking longer than expected. This might be due to:\n' +
+                          '• Claude Code CLI not being properly authenticated\n' +
+                          '• Network connectivity issues\n' +
+                          '• Claude CLI hanging in non-interactive mode\n\n' +
+                          'Try running `claude --help` in your terminal to verify it\'s working.';
+            } else if (error.message.includes('ENOENT') || error.message.includes('command not found')) {
+                errorMsg = '🔧 Claude Code CLI is not installed or not in PATH.\n' +
+                          'Install it with: `npm install -g @anthropic-ai/claude-code`\n' +
+                          'Or verify it\'s accessible: `which claude`';
+            } else if (error.message.includes('Claude process error')) {
+                errorMsg = '🔧 Claude Code CLI process error. This might be due to:\n' +
+                          '• Claude Code CLI not being properly authenticated\n' +
+                          '• Missing dependencies or corrupted installation\n' +
+                          '• System permissions issues\n\n' +
+                          'Try running `claude --help` to verify it\'s working.\n' +
+                          'Error: ' + error.message;
+            } else {
+                errorMsg = '❌ Sorry, I encountered an error processing your message.\n' +
+                          'Error: ' + error.message + '\n\n' +
+                          'Please verify Claude Code CLI is installed and working: `claude --help`';
+            }
+            
+            await message.reply(errorMsg);
+        }
+        
+        return; // Don't process other commands in claude-chat
+    }
+    
+    // ================================
+    // EXISTING BOT COMMANDS
+    // ================================
+    
     if (message.content === '!ping') {
         message.reply('Pong!');
+    }
+    
+    if (message.content === '!claude-test') {
+        message.reply('🧪 Testing Claude Code CLI integration...');
+        
+        try {
+            const testResponse = await processWithClaude('Hello Claude, this is a test from Discord bot');
+            const responseText = testResponse || 'No response received';
+            const preview = responseText.length > 200 ? responseText.substring(0, 200) + '...' : responseText;
+            await message.channel.send('✅ Claude integration test successful!\n🤖 Response: ' + preview);
+        } catch (error) {
+            await message.channel.send('❌ Claude integration test failed:\n' + error.message);
+        }
     }
     
     if (message.content === '!serverinfo') {
